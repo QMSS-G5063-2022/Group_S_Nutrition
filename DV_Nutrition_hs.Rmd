@@ -1,0 +1,341 @@
+---
+title: "DataViz_Nutrition_hs"
+author: "Huan Sun"
+date: "4/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Import the Package 
+```{r}
+library(tidyverse)
+library(dplyr)
+library(maps)
+library(ggmap)
+library(devtools)
+library(leaflet)
+library(ggthemes)
+library(RColorBrewer)
+library(widgetframe)
+```
+
+#### Import data and wrangling.
+```{r}
+setwd("C:/Users/hs324/OneDrive/Desktop/Class_Files/04_2022Spring_CU/GR5063_DataViz/Group Project/Group_S_Nutrition_hs")
+getwd()
+```
+
+
+```{r}
+# read one sample file in: [v27: saturated fat]
+non_starchy_vegs<-read.csv("data/Country-level-estimates/v02_cnty.csv")
+starchy_vegs<-read.csv("data/Country-level-estimates/v04_cnty.csv")
+```
+## Story about Starchy and Non-starchy Vegetables
+
+First take a look at the country level intake of *non starchy vegetables*.
+
+There are two main categories of vegetables: starchy and non-starchy. Starchy types include potatoes, corn and beans, while non-starchy types include broccoli, tomatoes and zucchini,etc. Both types of veggies are rich in fiber and nutrients, but starchy vegetables are known with higher percentage of carbs and calories.
+
+Note the _unit_ for the survey data of *non starchy vegetables* is _grams per day_.
+
+Here I try to calculate the female respondents' average intake of non starchy vegetables in 2018. 
+
+The code book suggests that the value being _999_ means that the query variable of `age`, `edu`, `urban` includes no breakdown.
+```{r}
+# non starchy vegetable info
+# dplyr::count(saturate_fat,year, sort = TRUE)
+
+female_nsv_18<- non_starchy_vegs %>%
+  # choose the year of 2018 for present, and 
+  filter(year==2018,age==999,edu==999,urban==999,female==1)%>%
+  dplyr::select(iso3,median)%>%
+  arrange(desc(median))%>%
+  rename(non_starchy_vegs_mean=median)
+
+female_sv_18<- starchy_vegs %>%
+  filter(year==2018,age==999,edu==999,urban==999,female==1)%>% # can add a filter of gender, with two layers
+  dplyr::select(iso3,median)%>%
+  arrange(desc(median))%>%
+  rename(starchy_vegs_mean=median)
+
+
+female_sv_18
+```
+#### Get the Base Map
+It turns out that ggmap isn't the best fit for the data with the world level. Yet can do other EDA when having found US specific health/dietary/nutrition data later.
+```{r}
+# get the data from google map API
+map_world <- get_map("Asia", zoom=2,
+                           source="stamen",maptype="toner-lite")
+ggmap(map_world)
+```
+
+```{r}
+## get the world map shape files with rgdal [Reference: Lec 7 - p54]
+library(rgdal)
+world_sp = readOGR(dsn= "data/world_map", 
+                     layer="TM_WORLD_BORDERS_SIMPL-0.3")
+```
+```{r}
+# add selected data from the dataset back to shape-files
+combined <- world_sp@data %>%
+  left_join(female_nsv_18,by=c(ISO3="iso3"))%>%
+  left_join(female_sv_18,by=c(ISO3="iso3"))
+
+world_sp@data <- combined
+```
+
+For the first layer, plot the average intake of non-strachy vegetables of female using the 2018 data. 
+```{r}
+plot1 <- leaflet(world_sp,
+              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+  setView(lat=10, lng=0 , zoom=2) %>%
+  # add country borders 
+ addPolygons(stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", non_starchy_vegs_mean)(non_starchy_vegs_mean), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(non_starchy_vegs_mean, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+ # add legend 
+  addLegend("bottomright", 
+    pal = colorNumeric("Blues", world_sp$non_starchy_vegs_mean), 
+            values = ~non_starchy_vegs_mean,
+    title = htmltools::HTML("Average intake of non-starchy vegetables <br/>(2018 Female)"),
+    opacity = 1)
+ 
+
+frameWidget(plot1)
+```
+
+Next, try to add one more layer, with the data of average intake of *starchy vegetables* of female using the 2018 survey data. 
+
+For reference: R Leaflet documentation: https://rstudio.github.io/leaflet/showhide.htmls
+
+```{r}
+plot2 <- leaflet(world_sp,
+              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+  setView(lat=10, lng=0 , zoom=2) %>%
+    # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  # add country borders 
+ addPolygons(group='Non-strachy Vegetables',
+               stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", non_starchy_vegs_mean)(non_starchy_vegs_mean), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(non_starchy_vegs_mean, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add the second layer: 
+  addPolygons(group='Strachy Vegetables',
+    stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+  fillColor = ~colorQuantile("Reds",starchy_vegs_mean)(starchy_vegs_mean), fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(starchy_vegs_mean, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add layer control
+  addLayersControl( 
+    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
+    overlayGroups = c("Non-strachy Vegetables","Strachy Vegetables"), #<<
+    options = layersControlOptions(collapsed = TRUE) )
+
+frameWidget(plot2)
+```
+
+### Key Takeaway:
+For starchy vegetables, South America, West Asia and Middle Africa  countries had an overall higher consumption, and North America and Australia have a relatively low consumption compared to that.
+
+Yet for non-starchy vegetables, Asian women have an significantly and obvious higher intake than the rest of the world. Women in Middle Africa also have this pattern of food intake. 
+
+## Map of Refined Grains with Sex as layers. 
+```{r}
+refined <- read.csv("data/Country-level-estimates/v07_cnty.csv")%>%
+  filter(year==2018,female!=999,age==999,urban==999,edu==999)%>%
+  dplyr::select(iso3,female,median)
+
+# being shown as median.x in the sp file
+refined_female<-refined%>%
+  filter(female==1)%>%
+  dplyr::select(iso3,median)
+
+# being shown as median.y 
+refomed_male <- refined%>%
+  filter(female==0)%>%
+  dplyr::select(iso3,median)
+
+combined <- world_sp@data %>%
+  left_join(refined_female,by=c(ISO3="iso3"))%>%
+  left_join(refomed_male,by=c(ISO3="iso3"))
+
+world_sp@data <- combined
+```
+
+Plot the refined grains consumption given sex.
+```{r}
+plot3 <- leaflet(world_sp,
+              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+  setView(lat=10, lng=0 , zoom=2) %>%
+    # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  # add country borders 
+ addPolygons(group='Female Refined Grains Intake',
+               stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", median.x)(median.x), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(median.x, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add the second layer: 
+  addPolygons(group='Male Refined Grains Intake',
+    stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+  fillColor = ~colorQuantile("Reds",median.y)(median.y), fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(median.x, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add layer control
+  addLayersControl( 
+    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
+    overlayGroups = c("Female Refined Grains Intake","Male Refined Grains Intake"), #<<
+    options = layersControlOptions(collapsed = TRUE) )
+
+frameWidget(plot3)
+```
+
+
+## Story about Processed and Non-processed Meat
+
+```{r}
+processed_meat<-read.csv("data/Country-level-estimates/v09_cnty.csv")
+unprocessed_meat<-read.csv("data/Country-level-estimates/v10_cnty.csv")
+cancer <- read.csv("data/world_cancer_2018.csv")
+cancer
+```
+
+Exploratory analysis about processed meat.
+```{r}
+# some countries showed strangely
+processed_meat%>%
+  filter(iso3=="ISR",age==999,female==999,edu==999,year==2018,urban!=999)
+```
+
+
+```{r}
+# Urban/ Rural distribution
+processed_meat %>%
+  filter(age==999,female==999,edu==999,year==2018,urban!=999)%>%
+  dplyr::select(iso3,urban,median,upperci_95,lowerci_95)%>%
+  mutate(rank=dense_rank(desc(median)))%>%
+  filter(rank<=20)%>%
+  # filter out the missing data
+  filter(!iso3 %in% c("ISR","GUY","COL","SAU"))%>%
+  ggplot(aes(x=reorder(iso3,median),y=median,fill=factor(urban,levels=c(0,1))))+
+  geom_bar(position = "dodge", stat="identity", alpha=0.8)+
+  scale_x_discrete(guide=guide_axis(angle=0))+ 
+  theme_minimal()+ 
+  labs(x = NULL, y = "Average Processed Meat Intake", fill = "urban") + coord_flip() +
+  scale_fill_manual(values = c("#24576D", "#963f3f"), labels = c("Rural", "Urban"), guide = guide_legend(reverse=TRUE)) +
+  ggtitle("Processed Meat Intake")+ 
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        legend.position = c(0.8,0.2),
+        legend.background = element_rect(fill = "white"),
+        plot.title = element_text(color = "gray10", size = 18),
+        legend.text = element_text(size = 10, color = "gray10"))
+ 
+ 
+```
+Takeaway: Rural area has a slightly more intake of the processed meat. 
+
+_*Story Line 1*_: Processed meat and cancer rate. 
+Can add some icons for the places with high cancer rate.
+  - Will it differ by gender?
+  - Will it differ by age? Maybe generate several age groups?
+  - Will it differ by education lever? Maybe people with higher edu level will choose less of the processed meat?
+  
+Reference viz: https://worldpopulationreview.com/country-rankings/cancer-rates-by-country
+
+
+Note: Crude and age-standardized (ASR) rates are expressed per 100,000 residents.
+```{r}
+# retrieve the 2018, all gender, all other education background and all residence places processed meat survey data.
+processed_female<-processed_meat%>%
+  filter(year==2018,age==999,edu==999,urban==999,female==1)%>%
+  dplyr::select(iso3,median)%>%
+  arrange(desc(median))%>%
+  rename(processed_meat_intake=median)
+
+processed_female
+```
+
+
+```{r}
+# add 2018 cancer data to the shape files
+combined <- world_sp@data %>%
+  left_join(cancer,by=c(ISO3="Iso3"))%>%
+  left_join(processed_female,by=c(ISO3="iso3"))
+
+world_sp@data <- combined
+```
+
+```{r}
+# plot the processed meat consumption as the base map 
+#plot3 <- leaflet() %>% addTiles() %>% 
+#     addPolygons(data = world_sp$processed_meat_intake) %>% 
+#     addCircleMarkers(data=world_sp$femaleASR, weight=0, radius=6, #<<
+#                   fillOpacity=0.6, #<<
+#                 popup=~paste("Name:",Country,"<br>Elevation:",femaleASR)) 
+
+#plot3<- leaflet(world_sp,
+#              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+#  setView(lat=10, lng=0 , zoom=2) %>%
+  # add country borders 
+# addPolygons(stroke = TRUE, smoothFactor = 0.5,
+#  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+#fillColor = ~colorQuantile("Blues", processed_meat_intake)(processed_meat_intake), 
+#  fillOpacity = 1,
+ # add label 
+#  label = ~stringr::str_c(Country, ' ',
+#          formatC(processed_meat_intake, big.mark = ',', format='d')),
+#  labelOptions = labelOptions(direction = 'auto'))%>%
+ # add legend 
+#  addLegend("bottomright", 
+#    pal = colorNumeric("Blues", world_sp$processed_meat_intake), 
+#            values = ~processed_meat_intake,
+#    title = htmltools::HTML("Average Intake of Processed Meat <br/>(2018 Female)"),
+#    opacity = 1)%>%
+#  addCircleMarkers(data=world_sp$femaleASR,
+#                  weight=0,radius=femaleASR/100,fillOpacity = 0.6)
+ 
+ 
+
+# frameWidget(plot3)
+
+
+# size the circles using the radius=~asr/100
+```
+
+  
+_*Story Line 2*_: Processed meat and life expectancy. 
+
+### Seperate by 大洲
+#### Find the color template
