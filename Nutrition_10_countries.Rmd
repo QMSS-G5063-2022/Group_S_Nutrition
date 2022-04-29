@@ -26,7 +26,7 @@ options(htmltools.dir.version = FALSE)
 
 ## Generate the dataframe for top 5 and last 5 countries (Based on GDP)
 ```{r load the data set and filter the 10 countries, echo = FALSE}
-df <- read_csv(file = "Country-level Nutritions.csv")
+df <- read_csv(file = "data/Country-level Nutritions.csv")
 #countries includes China, Germany, Japan, North Korea, Pakistan, Palestine, Sudan, Syria, United States, India
 country_list <- c("CHN","DEU","JPN","PRK","PAK","PSE","SDE","SYR","USA","IND")
 countries_10 <- filter(df, iso3 %in% country_list)

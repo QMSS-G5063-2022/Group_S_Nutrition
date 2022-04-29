@@ -1,0 +1,340 @@
+---
+title: "Group S: Nutrition Intake"
+author: "Renfang Yang, Yixuan Li, Huan Sun"
+date: "2022/4/28"
+output:
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
+# Load packages.
+packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
+            'glue','maps','ggpubr','ggmap','ggthemes','leaflet','tidytext',
+            'textdata','DT')
+
+packages <- lapply(packages, FUN = function(x) {
+  if(!require(x, character.only = TRUE)) {
+    install.packages(x)
+  library(x, character.only = TRUE)
+  }
+}
+)
+```
+
+
+
+```{r,message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
+# READ FILES
+# selected countries
+country_list = c('CHN','DEU','IND','JPN','PRK','PAK','PSE','SDN','SYR','USA')
+
+# read the file with country code, country name, and life expectancy
+life_df <- read_csv('data/life_exp.csv',show_col_types = FALSE) %>%
+  mutate(year = as.numeric(year))
+
+# read the file with food intake
+food_df <- read_csv('data/Country-level Nutritions.csv',show_col_types = FALSE)%>%
+  filter(varnum <15)%>%
+  rename(intake=median)
+
+# read the file with food code, and food name
+food_code <- read_csv('data/food_code.csv',show_col_types = FALSE) 
+
+# read the file with food code, and food name
+country_code <- read_csv('data/country_code.csv',show_col_types = FALSE) 
+
+# left join the two files above
+food_life <- food_df %>%
+  left_join(x=food_df, y=life_df, by = c('iso3'='Code','year'='year'))  %>%
+  left_join(.,y=food_code, by = c('varnum'='varnum'))
+```
+
+# 1. Nutrition Intake Overview
+### 1.1 Worldwide Discussion
+```{r}
+#wordcloud
+
+```
+
+
+### 1.2 Top Food Worldwide (by average daily intake)
+```{r, message = FALSE, warning = FALSE,echo=FALSE}
+top_food_box <- food_life %>%
+  filter(year==2018,age==999,female==999,urban==999,edu==999) %>%
+  ggplot(.,aes(x=reorder(Food,intake), y=intake))+
+  geom_boxplot( aes(color=Food,group=Food,fill=Food),alpha = 0.7)+
+  labs(title="Food Intake Worldwide",
+       caption= "Source:Global Dietary Database",
+       y="Average Food Daily Intake(g/d)",x='')+
+  # theme(legend.position='none')+
+  theme_pander()+
+  coord_flip()
+
+ggplotly(top_food_box)
+```
+
+
+### 1.3 Top Food Worldwide by Sex
+```{r, message = FALSE, warning = FALSE, echo=FALSE}
+top_food_sex <- food_life %>%
+  filter(year==2018,age==999,female!=999,urban==999,edu==999) %>%
+  mutate(sex=if_else(female==1,'female','male'))%>%
+  group_by(Food,sex)%>%
+  summarise(intake_avg = round(mean(intake),2))%>%
+  arrange(desc(intake_avg))
+
+ggplot(top_food_sex,aes(x=reorder(Food,intake_avg), y=intake_avg,fill=sex)) +
+  geom_bar(stat="identity",position="dodge", width = 0.5, alpha = 0.7) +
+  labs(title="Differences in Food Intake for Female & Male",
+       caption= "Source:Global Dietary Database",
+       y="Average Food Daily Intake",x='')+
+  theme_pander()+
+  coord_flip()
+```
+
+### 1.4 Food Intake Worldwide by Year
+```{r, message = FALSE, warning = FALSE, echo=FALSE}
+# Average Food Intake Worldwide by Year
+top_year <- food_life %>%
+  filter(age==999,female==999,urban==999,edu==999) %>%
+  group_by(year,Food)%>%
+  summarise(intake_avg = round(mean(intake),2))%>%
+  arrange(desc(intake_avg)) 
+  
+plot1 <- top_year%>%
+  ggplot(., aes(x = year, y=intake_avg,group=Food,color=Food)) + 
+  geom_line( size=1)+
+  geom_point(size=1)+
+  labs(x='Year', y='Intake Avg(g/day)', title='Average Food Intake Worldwide')+
+  theme_classic()
+
+ggplotly(plot1)
+```
+
+
+# 2. Dietary Struture
+```{r}
+#Dietary Struture 1990
+
+```
+
+```{r}
+#Dietary Struture 2018
+
+```
+
+### 2.1 Dietary Struture Changes in China
+```{r}
+#Dietary Struture 1990 in rural China
+
+```
+
+```{r}
+#Dietary Struture 2018 in urban China
+
+```
+
+
+```{r}
+# Refined Grains & Non-starchy Vegetables by Gender in China
+
+```
+
+### 2.2 Refined Grains
+```{r}
+# Refined Grains wordcloud
+
+```
+
+```{r}
+# Refined Grains map
+
+```
+
+```{r}
+# Refined Grains bar chart by continent
+
+```
+
+### 2.3 Non-starchy Vegetables
+```{r}
+# Vegetables wordcloud
+
+```
+
+```{r}
+# Vegetables map
+
+```
+
+```{r}
+# Vegetables bar chart by continent
+
+```
+
+
+# 3. Nutrition & Health
+### 3.1 Food Intake & Life Expetancy
+```{r}
+# life exp map
+
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo=FALSE}
+# lm reg line chart
+food_life2018 <- food_life %>%
+    filter(age==999,female==999,urban==999,edu==999,year==2018)
+
+p7<- food_life2018 %>%
+  filter(varnum==7)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Refined grains")+
+  theme_classic()
+
+p2 <- food_life2018 %>%
+  filter(varnum==2)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Non-starchy vegetables")+
+  theme_classic()
+
+p1 <- food_life2018 %>%
+  filter(varnum==1)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Fruits")+    
+  theme_classic()
+
+p3 <- food_life2018 %>%
+  filter(varnum==3)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Potatoes")+  
+  theme_classic()
+
+p8 <- food_life2018 %>%
+  filter(varnum==8)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Whole grains")+  
+  theme_classic()
+
+p9 <- food_life2018 %>%
+  filter(varnum==9)%>%
+  ggplot(., aes(x = intake, y=life_exp)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Life expectancy', title="Processed meats")+  
+  theme_classic()
+
+life_food = ggarrange(p7,p2,p1,p3,p8,p9,ncol = 2, nrow = 3)
+
+annotate_figure(life_food,top = text_grob("Life Expectancy & Food Intake", 
+                                color = "red", face = "bold", size = 14))
+```
+
+
+### 3.1 Food Intake & Cancer Rate
+```{r}
+# cancer rate map
+
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo=FALSE}
+cancer7<- food_life2018 %>%
+  filter(varnum==7)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Refined grains")+
+  theme_classic()
+
+cancer2 <- food_life2018 %>%
+  filter(varnum==2)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Non-starchy vegetables")+
+  theme_classic()
+
+cancer1 <- food_life2018 %>%
+  filter(varnum==1)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Fruits")+    
+  theme_classic()
+
+cancer3 <- food_life2018 %>%
+  filter(varnum==3)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Potatoes")+  
+  theme_classic()
+
+cancer8 <- food_life2018 %>%
+  filter(varnum==8)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Whole grains")+  
+  theme_classic()
+
+cancer9 <- food_life2018 %>%
+  filter(varnum==9)%>%
+  ggplot(., aes(x = intake, y=cancer_rate)) + 
+  geom_point(size=1)+
+  geom_smooth(method='lm', formula= y~x)+
+  labs(x='intake', y='Cancer Rate', title="Processed meats")+  
+  theme_classic()
+
+cancer_food = ggarrange(cancer7,cancer2,cancer1,cancer3,cancer8,cancer9,
+                   ncol = 2, nrow = 3)
+
+annotate_figure(cancer_food,top = text_grob("Cancer Rate & Food Intake", 
+                                color = "red", face = "bold", size = 14))
+```
+
+
+
+# Appendix
+### basic information of food intake
+```{r}
+basic_intake <- food_life %>%
+  filter(age==999,female==999,urban==999,edu==999) %>%
+  rename(continent = superregion2) %>%
+  mutate_at(c('intake'), function(x) round(x,2))%>%
+  select(continent,year,Country,Food,intake) %>%
+  arrange(Country)
+
+datatable(basic_intake,filter = list(position = "top"),rownames = FALSE) 
+```
+
+### basic information of life expectancy & cancer rate
+```{r}
+basic_life <- food_life %>%
+  filter(age==999,female==999,urban==999,edu==999) %>%
+  rename(continent = superregion2) %>%
+  mutate_at(c('cancer_rate','life_exp'), function(x) round(x,2))%>%
+  select(continent,year,Country,life_exp,cancer_rate) %>%
+  arrange(Country)
+
+datatable(basic_life,filter = list(position = "top"),rownames = FALSE) 
+```
+
