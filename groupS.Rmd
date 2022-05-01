@@ -15,7 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load packages.
 packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
             'glue','maps','ggpubr','ggmap','ggthemes','leaflet','leaflet.extras',
-            'tidytext','textdata','DT','RColorBrewer','widgetframe','rgdal')
+            'tidytext','textdata','DT','RColorBrewer','widgetframe','rgdal','grid',
+            'gridExtra','rio','textstem','tm','wordcloud2','qdapRegex')
 
 packages <- lapply(packages, FUN = function(x) {
   if(!require(x, character.only = TRUE)) {
@@ -56,14 +57,45 @@ food_life <- food_df %>%
 
 # 1. Nutrition Intake Overview
 ### 1.1 Worldwide Discussion
-```{r}
+Here we generate a word cloud from tweets which is under the tag "nutritional", and we would further see if there is a difference between the general tag and the tag for a specific type of food using this word cloud later.
+```{r, message = FALSE, warning = FALSE}
+#word cloud with "nutritional" tag in twitter
+n <- "data/nutritional"
+files <- list.files(n, pattern="csv", full.names=TRUE) %>%
+    set_names()
+wc_n <- files %>% map_dfr(read_csv, .id="filename")
+n_text <- str_c(wc_n$data.text, collapse = "")
+#clean the text
+n_text <- 
+  n_text %>%
+  str_remove("\\n") %>%                   # remove linebreaks
+  rm_twitter_url() %>%                    # Remove URLS
+  rm_url() %>%
+  str_remove_all("#\\S+") %>%             # Remove any hashtags
+  str_remove_all("@\\S+") %>%             # Remove any @ mentions
+  removeWords(stopwords("english")) %>%   # Remove common words (a, the, it etc.)
+  removeNumbers() %>%
+  stripWhitespace() %>%
+  removeWords(c("amp")) %>%
+  removeWords(stopwords("SMART")) %>%
+  removePunctuation()
+removeNumPunct <- function(x){gsub("[^[:alpha:][:space:]]*", "", x)}
+# Convert the data into a summary table
+n_Corpus <- 
+  Corpus(VectorSource(n_text)) %>%
+  tm_map(content_transformer(removeNumPunct)) %>%
+  TermDocumentMatrix() %>%
+  as.matrix()
+n_Corpus <- sort(rowSums(n_Corpus), decreasing=TRUE)
+n_Corpus <- data.frame(word = names(n_Corpus), freq=n_Corpus, row.names = NULL)
 #wordcloud
-
+set.seed(1000)
+wordcloud2(n_Corpus, color = 'random-light', size = 2, minRotation = -pi/6, maxRotation = -pi/6)
 ```
 
 
 ### 1.2 Top Food Worldwide (by average daily intake)
-```{r, message = FALSE, warning = FALSE,echo=FALSE}
+```{r, message = FALSE, warning = FALSE}
 top_food_box <- food_life %>%
   filter(year==2018,age==999,female==999,urban==999,edu==999) %>%
   ggplot(.,aes(x=reorder(Food,intake), y=intake))+
@@ -80,7 +112,7 @@ ggplotly(top_food_box)
 
 
 ### 1.3 Top Food Worldwide by Sex
-```{r, message = FALSE, warning = FALSE, echo=FALSE}
+```{r, message = FALSE, warning = FALSE}
 top_food_sex <- food_life %>%
   filter(year==2018,age==999,female!=999,urban==999,edu==999) %>%
   mutate(sex=if_else(female==1,'female','male'))%>%
@@ -98,7 +130,7 @@ ggplot(top_food_sex,aes(x=reorder(Food,intake_avg), y=intake_avg,fill=sex)) +
 ```
 
 ### 1.4 Food Intake Worldwide by Year
-```{r, message = FALSE, warning = FALSE, echo=FALSE}
+```{r, message = FALSE, warning = FALSE}
 # Average Food Intake Worldwide by Year
 top_year <- food_life %>%
   filter(age==999,female==999,urban==999,edu==999) %>%
@@ -117,43 +149,225 @@ ggplotly(plot1)
 ```
 
 
-# 2. Dietary Struture
-```{r}
-#Dietary Struture 1990
-
+# 2. Dietary Structure
+Below we visualize the dietary structure in 1990 of 9 countries with top and last total GDP. The dietary structure is shown by calculating the percentage of each type of food in the total food intake respectively.
+```{r, message = FALSE, warning = FALSE}
+#Dietary Structure of 10 countries in 1990
+# select food intake data in 10 countries 
+countries_10 <- filter(food_life, iso3 %in% country_list)
+#select the general data points (all demographics features = 999)
+gen_countries <- countries_10 %>% filter(age == 999 &
+                                           female == 999,
+                                         urban == 999,
+                                         edu == 999)
+#Dietary Structure 1990
+d_stru_90 <- gen_countries %>% filter(year==1990) %>%
+  group_by(Country) %>%
+  summarise(Food, total = sum(intake), percentage=(round(intake/total,4))*100) %>%
+  ggplot(aes(fill=Food, y=percentage, x=Country)) +
+  geom_bar(position="stack", stat="identity") +
+  labs(x="Country", title="Dietary Sturcture in 1990") +
+  theme_classic() +
+  coord_flip() 
+ggplotly(d_stru_90) %>% layout(xaxis = list(title = "Percentage in Diet"),
+                               legend = list(orientation = "h",itemsizing="constant"))
 ```
 
-```{r}
-#Dietary Struture 2018
-
+Then we visualize the dietary structure in 2018 of the same 9 countries.
+```{r, message = FALSE, warning = FALSE}
+#Dietary Structure of 10 countries in 2018
+d_stru_18 <- gen_countries %>% filter(year==2018) %>%
+  group_by(Country) %>%
+  summarise(Food, total = sum(intake), percentage=(round(intake/total,4))*100) %>%
+  ggplot(aes(fill=Food, y=percentage, x=Country)) +
+  geom_bar(position="stack", stat="identity") +
+  labs(x="Country", title="Dietary Sturcture in 2018") +
+  theme_classic() +
+  coord_flip() 
+ggplotly(d_stru_18) %>% layout(xaxis = list(title = "Percentage in Diet"),
+                               legend = list(orientation = "h",itemsizing="constant"))
 ```
 
 ### 2.1 Dietary Struture Changes in China
-```{r}
-#Dietary Struture 1990 in rural China
+After comparing the dietary structure in 1990 and in 2018, we find that Chinese's dietary structure has experienced the most significant changes, therefore, we pay attention to the dietary structure based on demographic characteristics in China. We firstly seperate the dietary structure by area.
+```{r, message = FALSE, warning = FALSE}
+#Changes of Dietary Structure (1990 vs 2018) in rural China
+area <- countries_10 %>% filter(age == 999 & urban != 999 &
+                                         edu == 999 & Country == "China" &
+                                    female == 999 & year != 2020) %>%
+  mutate(area= case_when(urban==1 ~ "Urban", 
+                         urban==0 ~ "Rural"))
 
+area_China <- area %>%
+  group_by(year) %>%
+  summarise(Food, area, total = sum(intake), percentage=(round(intake/total,4))*100, .groups = 'drop') 
+
+ru.mid<-ggplot(area_China,aes(x=1,y=Food))+geom_text(aes(label=Food))+
+  geom_segment(aes(x=0.94,xend=0.96,yend=Food))+
+  geom_segment(aes(x=1.04,xend=1.065,yend=Food))+
+  ggtitle("")+
+  ylab(NULL)+
+  scale_x_continuous(expand=c(0,0),limits=c(0.94,1.065))+
+  theme(axis.title=element_blank(),
+        panel.grid=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.background=element_blank(),
+        axis.text.x=element_text(color=NA),
+        axis.ticks.x=element_line(color=NA),
+        plot.margin = unit(c(1,-1,1,-1), "mm"))
+
+ru_90 <- area_China %>%
+  filter(area=="Rural" & year==1990) %>%
+  ggplot(aes(x = Food, y = percentage,fill = Food)) +
+  geom_bar(stat = "identity") + ggtitle("Dietary Structure(Rural China,1990)") +
+  geom_text(aes(y=10, label = percentage),color = "black") +
+  coord_flip() + scale_y_reverse() +
+  theme(axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        plot.title = element_text(size = 10),
+        plot.margin = unit(c(1,-1,1,0), "mm"))
+
+ru_18 <- area_China %>%
+  filter(area=="Rural" & year==2018) %>%
+  ggplot(aes(x = Food, y = percentage, fill = Food)) +
+  geom_bar(stat = "identity") + ggtitle("Dietary Structure(Rural China,2018)") +
+  geom_text(aes(y=10, label = percentage),color = "black") +
+  coord_flip() + xlab(NULL) +
+  theme(axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(), 
+        legend.position="none",
+        panel.background=element_blank(),
+        plot.title = element_text(size = 10),
+        plot.margin = unit(c(1,-1,1,0), "mm")) 
+
+ru1 <- ggplot_gtable(ggplot_build(ru_90))
+ru2 <- ggplot_gtable(ggplot_build(ru_18))
+ru.mid <- ggplot_gtable(ggplot_build(ru.mid))
+grid.arrange(ru1,ru.mid,ru2,ncol=3,widths=c(3/9,3/9,3/9))
 ```
 
-```{r}
-#Dietary Struture 2018 in urban China
+```{r, message = FALSE, warning = FALSE}
+#Changes of Dietary Structure (1990 vs 2018) in urban China
+ur_90 <- area_China %>%
+  filter(area=="Urban" & year==1990) %>%
+  ggplot(aes(x = Food, y = percentage,fill = Food)) +
+  geom_bar(stat = "identity") + ggtitle("Dietary Structure(Urban China,1990)") +
+  geom_text(aes(y=10, label = percentage),color = "black") +
+  coord_flip() + scale_y_reverse() +
+  theme(axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        plot.title = element_text(size = 10),
+        plot.margin = unit(c(1,-1,1,0), "mm")) 
 
+ur_18 <- area_China %>%
+  filter(area=="Urban" & year==2018) %>%
+  ggplot(aes(x = Food, y = percentage, fill = Food)) +
+  geom_bar(stat = "identity") + ggtitle("Dietary Structure(Urban China,2018)") +
+  geom_text(aes(y=10, label = percentage),color = "black") +
+  coord_flip() + xlab(NULL) +
+  theme(axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(), 
+        legend.position="none",
+        panel.background=element_blank(),
+        plot.title = element_text(size = 10),
+        plot.margin = unit(c(1,-1,1,0), "mm")) 
+
+library(gridExtra)
+ur1 <- ggplot_gtable(ggplot_build(ur_90))
+ur2 <- ggplot_gtable(ggplot_build(ur_18))
+grid.arrange(ur1,ru.mid,ur2,ncol=3,widths=c(3/9,3/9,3/9))
 ```
+Based on above graphs, there is no significant difference of dietary structure between the rural and urban area in China. Both of the areas see the same changes in dietary structure.
 
+Among all the types of food, two of them experienced significant changes-- Refined grains and Non-starchy vegetables. Therefore, we mainly focus in the changes of these two types of food in China. The dimension we choose to see the difference is gender.
+```{r, message = FALSE, warning = FALSE}
+# Changes of Refined Grains by Gender in China
+gender <- countries_10 %>% 
+  filter(age == 999 & urban == 999 & edu == 999 & Country == "China" &
+                                    female != 999 & year != 2020) %>%
+  mutate(gender= case_when(female==1 ~ "Female", 
+                           female==0 ~ "Male"))
+gender_China <- gender %>%
+  group_by(year) %>%
+  summarise(Food, gender, total = sum(intake), percentage=(round(intake/total,4))*100) 
 
-```{r}
-# Refined Grains & Non-starchy Vegetables by Gender in China
+rg_gender <- gender_China %>%
+  filter(Food == "Refined grains") %>%
+  ggplot(aes(x = year, y=percentage, group=gender, color=gender)) + 
+  geom_line( size=1) +
+  geom_point(size=1) +
+  labs(x="Year", y="Percentage of Refined Grains", title="Refined Grains in Dietary Structure by Gender in China") +
+  theme_classic()
 
+ggplotly(rg_gender) 
 ```
+We can see there is a similar descending trend in the changes of the percentage of refined grains between females and males in China.
+```{r, message = FALSE, warning = FALSE}
+ #Changes of Non-starchy Vegetables by Gender in China
+nv_gender <- gender_China %>%
+  filter(Food == "Non-starchy vegetables") %>%
+  ggplot(aes(x = year, y=percentage, group=gender, color=gender)) + 
+  geom_line( size=1) +
+  geom_point(size=1) +
+  labs(x="Year", y="Percentage of Non-starchy vegetables", title="Non-starchy vegetables in Dietary Structure by Gender in China") +
+  theme_classic()
+
+ggplotly(nv_gender) 
+```
+There is a similar ascending trend in the changes of the percentage of non-starchy vegetables between females and males in China, while the gap between females and males is growing larger among these 28 years.
 
 ### 2.2 Refined Grains
-```{r}
-# Refined Grains wordcloud
-
+Compared with the word cloud for #nutritional tag, there is no significant differences between the words under the #refineddgrains tag. Refined grains are not taken as a negative type of food in twitter as we expected.
+```{r, message = FALSE, warning = FALSE}
+# Refined Grains word cloud in twitter
+g <- "data/grains"
+files_g <- list.files(g, pattern="csv", full.names=TRUE) %>%
+    set_names()
+wc_g <- files_g %>% map_dfr(read_csv, .id="filename")
+g_text <- str_c(wc_g$data.text, collapse = "")
+#clean the text
+g_text <- 
+  g_text %>%
+  str_remove("\\n") %>%                   # remove linebreaks
+  rm_twitter_url() %>%                    # Remove URLS
+  rm_url() %>%
+  str_remove_all("#\\S+") %>%             # Remove any hashtags
+  str_remove_all("@\\S+") %>%             # Remove any @ mentions
+  removeWords(stopwords("english")) %>%   # Remove common words (a, the, it etc.)
+  removeNumbers() %>%
+  stripWhitespace() %>%
+  removeWords(c("amp")) %>%
+  removeWords(stopwords("SMART")) %>%
+  removePunctuation()
+removeNumPunct <- function(x){gsub("[^[:alpha:][:space:]]*", "", x)}
+# Convert the data into a summary table
+g_Corpus <- 
+  Corpus(VectorSource(n_text)) %>%
+  tm_map(content_transformer(removeNumPunct)) %>%
+  TermDocumentMatrix() %>%
+  as.matrix()
+g_Corpus <- sort(rowSums(g_Corpus), decreasing=TRUE)
+g_Corpus <- data.frame(word = names(g_Corpus), freq=g_Corpus, row.names = NULL)
+#wordcloud
+wordcloud2(g_Corpus, color = 'random-light', size = 2, minRotation = -pi/6, maxRotation = -pi/6)
 ```
 
 #### Refined Grains Intake Over the World
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # read the refined grains data in 
 refined_grains <- read.csv("data/Country-level-estimates/v07_cnty.csv")
 
@@ -163,7 +377,7 @@ refined <- read.csv("data/Country-level-estimates/v07_cnty.csv")%>%
 ```
 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # being shown as median.x in the sp file
 refined_female<-refined%>%
   filter(female==1)%>%
@@ -187,7 +401,7 @@ world_sp@data <- combined
 ```
 
 Plot the refined grains consumption given sex.
-```{r}
+```{r, message = FALSE, warning = FALSE}
 plot1 <- leaflet(world_sp,
               leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
   setView(lat=10, lng=0 , zoom=2) %>%
@@ -226,7 +440,7 @@ widgetframe::frameWidget(plot1, width = "100%")
 ```
 The maps suggests that worldwide wise, there's no obvious difference in refined grains intake upon gender. But the distribution of densely darkened countries suggests that there's may have some insights super-regional wise. 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Refined Grains bar chart by continent
 
 df <- refined_grains%>%
@@ -276,19 +490,14 @@ _*Takeaway*_:
 Throughout the year from 1990 to 2015, the _High Income Countries_ have shown a significantly lower consumption of refined grains compared to other super regional areas. Both South and East&Southeast Asia consumes the highest amount of refined grains. 
 
 ### 2.3 Non-starchy Vegetables
-```{r}
-# Vegetables wordcloud
-
-```
-
 There are two main categories of vegetables: starchy and non-starchy. Starchy types include potatoes, corn and beans, while non-starchy types include broccoli, tomatoes and zucchini,etc. Both types of veggies are rich in fiber and nutrients, but starchy vegetables are known with higher percentage of carbs and calories.
 
 Note the _unit_ for the survey data of *non starchy vegetables* is _grams per day_.
 
-Here I try to calculate the female respondents' average intake of non starchy vegetables in 2018. 
+Here we try to calculate the female respondents' average intake of non starchy vegetables in 2018. 
 
 The code book suggests that the value being _999_ means that the query variable of `age`, `edu`, `urban` includes no breakdown.
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # get the data in 
 non_starchy_vegs<-read.csv("data/Country-level-estimates/v02_cnty.csv")
 starchy_vegs<-read.csv("data/Country-level-estimates/v04_cnty.csv")
@@ -315,7 +524,7 @@ combined <- world_sp@data %>%
 world_sp@data <- combined
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 plot2 <- leaflet(world_sp,
               leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
   setView(lat=10, lng=0 , zoom=2) %>%
@@ -351,11 +560,11 @@ plot2 <- leaflet(world_sp,
 frameWidget(plot2)
 ```
 _*Takeaway*_:
-For starchy vegetables, South America, West Asia and Middle Africa  countries had an overall higher consumption, and North America and Australia have a relatively low consumption compared to that.
+For starchy vegetables, South America, West Asia and Middle Africa countries had an overall higher consumption, and North America and Australia have a relatively low consumption compared to that.
 
 Yet for non-starchy vegetables, Asian women have an significantly and obvious higher intake than the rest of the world. Women in Middle Africa also have this pattern of food intake.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Vegetables bar chart by continent
 df01 <- non_starchy_vegs%>%
   filter(age==999,female==999,urban==999,edu==999)%>%
@@ -406,7 +615,7 @@ Russia (Former Soviet Union) has an increasing level of intake that allows it ou
 
 # 3. Nutrition & Health
 ### 3.1 Food Intake & Life Expetancy
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # life exp map
 
 
@@ -415,7 +624,7 @@ Russia (Former Soviet Union) has an increasing level of intake that allows it ou
 
 
 
-```{r, message = FALSE, warning = FALSE, echo=FALSE}
+```{r, message = FALSE, warning = FALSE}
 # lm reg line chart
 food_life2018 <- food_life %>%
     filter(age==999,female==999,urban==999,edu==999,year==2018)
@@ -476,14 +685,14 @@ annotate_figure(life_food,top = text_grob("Life Expectancy & Food Intake",
 
 
 ### 3.1 Food Intake & Cancer Rate
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # cancer rate map
 
 
 ```
 
 
-```{r, message = FALSE, warning = FALSE, echo=FALSE}
+```{r, message = FALSE, warning = FALSE}
 cancer7<- food_life2018 %>%
   filter(varnum==7)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
@@ -543,7 +752,7 @@ annotate_figure(cancer_food,top = text_grob("Cancer Rate & Food Intake",
 
 # Appendix
 ### basic information of food intake
-```{r}
+```{r, message = FALSE, warning = FALSE}
 basic_intake <- food_life %>%
   filter(age==999,female==999,urban==999,edu==999) %>%
   rename(continent = superregion2) %>%
@@ -555,7 +764,7 @@ datatable(basic_intake,filter = list(position = "top"),rownames = FALSE)
 ```
 
 ### basic information of life expectancy & cancer rate
-```{r}
+```{r, message = FALSE, warning = FALSE}
 basic_life <- food_life %>%
   filter(age==999,female==999,urban==999,edu==999) %>%
   rename(continent = superregion2) %>%
