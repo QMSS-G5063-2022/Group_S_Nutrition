@@ -14,8 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r packages, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 # Load packages.
 packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
-            'glue','maps','ggpubr','ggmap','ggthemes','leaflet','tidytext',
-            'textdata','DT')
+            'glue','maps','ggpubr','ggmap','ggthemes','leaflet','leaflet.extras',
+            'tidytext','textdata','DT','RColorBrewer','widgetframe','rgdal')
 
 packages <- lapply(packages, FUN = function(x) {
   if(!require(x, character.only = TRUE)) {
@@ -111,7 +111,7 @@ plot1 <- top_year%>%
   geom_line( size=1)+
   geom_point(size=1)+
   labs(x='Year', y='Intake Avg(g/day)', title='Average Food Intake Worldwide')+
-  theme_classic()
+  theme_pander()
 
 ggplotly(plot1)
 ```
@@ -151,15 +151,129 @@ ggplotly(plot1)
 
 ```
 
-```{r}
-# Refined Grains map
+#### Refined Grains Intake Over the World
 
+```{r}
+# read the refined grains data in 
+refined_grains <- read.csv("data/Country-level-estimates/v07_cnty.csv")
+
+refined <- read.csv("data/Country-level-estimates/v07_cnty.csv")%>%
+  filter(year==2018,female!=999,age==999,urban==999,edu==999)%>%
+  dplyr::select(iso3,female,median)
 ```
+
+
+```{r}
+# being shown as median.x in the sp file
+refined_female<-refined%>%
+  filter(female==1)%>%
+  dplyr::select(iso3,median)
+
+# being shown as median.y 
+refined_male <- refined%>%
+  filter(female==0)%>%
+  dplyr::select(iso3,median)
+
+# get the world map shape files with rgdal 
+library(rgdal)
+world_sp = readOGR(dsn= "data/world_map", 
+                     layer="TM_WORLD_BORDERS_SIMPL-0.3")
+
+combined <- world_sp@data %>%
+  left_join(refined_female,by=c(ISO3="iso3"))%>%
+  left_join(refined_male,by=c(ISO3="iso3"))
+
+world_sp@data <- combined
+```
+
+Plot the refined grains consumption given sex.
+```{r}
+plot1 <- leaflet(world_sp,
+              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+  setView(lat=10, lng=0 , zoom=2) %>%
+    # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  # add country borders 
+ addPolygons(group='Female Refined Grains Intake',
+               stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", median.x)(median.x), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(median.x, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add the second layer: 
+  addPolygons(group='Male Refined Grains Intake',
+    stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+  fillColor = ~colorQuantile("Reds",median.y)(median.y), fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(median.x, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add layer control
+  addLayersControl( 
+    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
+    overlayGroups = c("Female Refined Grains Intake","Male Refined Grains Intake"), #<<
+    options = layersControlOptions(collapsed = TRUE) )
+
+#frameWidget(plot1)
+
+widgetframe::frameWidget(plot1, width = "100%")
+```
+The maps suggests that worldwide wise, there's no obvious difference in refined grains intake upon gender. But the distribution of densely darkened countries suggests that there's may have some insights super-regional wise. 
 
 ```{r}
 # Refined Grains bar chart by continent
 
+df <- refined_grains%>%
+  filter(age==999,female==999,urban==999,edu==999)%>%
+  dplyr::select(superregion2,iso3,year,median)%>%
+  group_by(superregion2,year)%>%
+  mutate(regional_avg=mean(median))%>%
+  select(superregion2,year,regional_avg)%>% 
+  mutate(superregion2 = recode(superregion2, Asia = "East & Southeast Asia",
+                               FSU = "Former Soviet Union",
+                               HIC =  "High-Income Countries",
+                               LAC = "Latin America & Caribbean",
+                               MENA= "Middle East & North Africa",
+                               SAARC ="South Asia",
+                               SSA = "Sub-Saharan Africa"
+                               ))
+
+df%>% 
+  ggplot(aes(x = year, y = regional_avg, 
+                   color = factor(superregion2,levels=c("East & Southeast Asia",
+                                           "Former Soviet Union", 
+                                           "High-Income Countries", 
+                                           "Latin America & Caribbean",
+                                           "Middle East & North Africa",
+                                           "South Asia",
+                                           "Sub-Saharan Africa")))) + 
+  geom_point(size = 2, alpha = 0.5)+
+  geom_smooth(se = F, alpha=0.3) +
+  scale_color_manual(values = c("#67001f", "#d6604d",
+                                  "#fddbc7", "#d1e5f0", "#92c5de",
+                                  "#2166ac", "#053061"))+
+  guides(color=guide_legend(title=NULL))+
+  theme_minimal() + 
+  labs(x = "Year", y = "Grams") +
+  scale_x_continuous(breaks = seq(1990, 2018, 5), guide = guide_axis(angle = 0))+
+  theme(axis.title.y = element_text(vjust = 2),
+        legend.direction = "horizontal",
+        legend.justification = 0.05,
+        legend.position = "top",
+        legend.text = element_text(size = 6, color = "gray10"),
+        panel.grid.minor.y =element_blank()) + 
+  ggtitle("Superregional Refined Grains Average Intake") + 
+  labs(caption = "*For all ages, gender, rural/urban, edu background.")
+
 ```
+_*Takeaway*_:
+Throughout the year from 1990 to 2015, the _High Income Countries_ have shown a significantly lower consumption of refined grains compared to other super regional areas. Both South and East&Southeast Asia consumes the highest amount of refined grains. 
 
 ### 2.3 Non-starchy Vegetables
 ```{r}
@@ -167,16 +281,128 @@ ggplotly(plot1)
 
 ```
 
-```{r}
-# Vegetables map
+There are two main categories of vegetables: starchy and non-starchy. Starchy types include potatoes, corn and beans, while non-starchy types include broccoli, tomatoes and zucchini,etc. Both types of veggies are rich in fiber and nutrients, but starchy vegetables are known with higher percentage of carbs and calories.
 
+Note the _unit_ for the survey data of *non starchy vegetables* is _grams per day_.
+
+Here I try to calculate the female respondents' average intake of non starchy vegetables in 2018. 
+
+The code book suggests that the value being _999_ means that the query variable of `age`, `edu`, `urban` includes no breakdown.
+```{r}
+# get the data in 
+non_starchy_vegs<-read.csv("data/Country-level-estimates/v02_cnty.csv")
+starchy_vegs<-read.csv("data/Country-level-estimates/v04_cnty.csv")
+
+female_nsv_18<- non_starchy_vegs %>%
+  # choose the year of 2018 for present 
+  filter(year==2018,age==999,edu==999,urban==999,female==1)%>%
+  dplyr::select(iso3,median)%>%
+  arrange(desc(median))%>%
+  rename(non_starchy_vegs_mean=median)
+
+female_sv_18<- starchy_vegs %>%
+  filter(year==2018,age==999,edu==999,urban==999,female==1)%>% 
+  # can add a filter of gender, with two layers
+  dplyr::select(iso3,median)%>%
+  arrange(desc(median))%>%
+  rename(starchy_vegs_mean=median)
+
+# add selected data from the dataset back to shape-files
+combined <- world_sp@data %>%
+  left_join(female_nsv_18,by=c(ISO3="iso3"))%>%
+  left_join(female_sv_18,by=c(ISO3="iso3"))
+
+world_sp@data <- combined
 ```
+
+```{r}
+plot2 <- leaflet(world_sp,
+              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
+  setView(lat=10, lng=0 , zoom=2) %>%
+    # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  # add country borders 
+ addPolygons(group='Non-strachy Vegetables',
+               stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", non_starchy_vegs_mean)(non_starchy_vegs_mean), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(non_starchy_vegs_mean, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add the second layer: 
+  addPolygons(group='Strachy Vegetables',
+    stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+  fillColor = ~colorQuantile("Reds",starchy_vegs_mean)(starchy_vegs_mean), fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(starchy_vegs_mean, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+  # add layer control
+  addLayersControl( 
+    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
+    overlayGroups = c("Non-strachy Vegetables","Strachy Vegetables"), #<<
+    options = layersControlOptions(collapsed = TRUE) )
+
+frameWidget(plot2)
+```
+_*Takeaway*_:
+For starchy vegetables, South America, West Asia and Middle Africa  countries had an overall higher consumption, and North America and Australia have a relatively low consumption compared to that.
+
+Yet for non-starchy vegetables, Asian women have an significantly and obvious higher intake than the rest of the world. Women in Middle Africa also have this pattern of food intake.
 
 ```{r}
 # Vegetables bar chart by continent
+df01 <- non_starchy_vegs%>%
+  filter(age==999,female==999,urban==999,edu==999)%>%
+  dplyr::select(superregion2,iso3,year,median)%>%
+  group_by(superregion2,year)%>%
+  mutate(regional_avg=mean(median))%>%
+  select(superregion2,year,regional_avg)%>% 
+  mutate(superregion2 = recode(superregion2, Asia = "East & Southeast Asia",
+                               FSU = "Former Soviet Union",
+                               HIC =  "High-Income Countries",
+                               LAC = "Latin America & Caribbean",
+                               MENA= "Middle East & North Africa",
+                               SAARC ="South Asia",
+                               SSA = "Sub-Saharan Africa"
+                               ))
+
+df01%>% 
+  ggplot(aes(x = year, y = regional_avg, 
+                   color = factor(superregion2,levels=c("East & Southeast Asia",
+                                           "Former Soviet Union", 
+                                           "High-Income Countries", 
+                                           "Latin America & Caribbean",
+                                           "Middle East & North Africa",
+                                           "South Asia",
+                                           "Sub-Saharan Africa")))) + 
+  geom_point(size = 2, alpha = 0.5)+
+  geom_smooth(se = F, alpha=0.3) +
+  scale_color_manual(values = c("#67001f", "#d6604d",
+                                  "#fddbc7", "#d1e5f0", "#92c5de",
+                                  "#2166ac", "#053061"))+
+  guides(color=guide_legend(title=NULL))+
+  theme_minimal() + 
+  labs(x = "Year", y = "Grams") +
+  scale_x_continuous(breaks = seq(1990, 2018, 5), guide = guide_axis(angle = 0))+
+  theme(axis.title.y = element_text(vjust = 2),
+        legend.direction = "horizontal",
+        legend.justification = 0.05,
+        legend.position = "top",
+        legend.text = element_text(size = 8, color = "gray10"),
+        panel.grid.minor.y =element_blank()) + 
+  ggtitle("Superregional Non Starchy Vegetables Average Intake") + 
+  labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
 ```
-
+_*Takeaway*_:
+Latin America & Caribbean countries has the lowest intake of non starchy vegetables, and surprisingly, the high income countries also shows a relatively low non starchy vegetables consumption. 
+Russia (Former Soviet Union) has an increasing level of intake that allows it outnumbered other countries by the end of 2018. 
 
 # 3. Nutrition & Health
 ### 3.1 Food Intake & Life Expetancy
