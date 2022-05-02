@@ -649,48 +649,48 @@ food_life2018 <- food_life %>%
 p7<- food_life2018 %>%
   filter(varnum==7)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Refined grains")+
   theme_classic()
 
 p2 <- food_life2018 %>%
   filter(varnum==2)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Non-starchy vegetables")+
   theme_classic()
 
 p1 <- food_life2018 %>%
   filter(varnum==1)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Fruits")+    
   theme_classic()
 
 p3 <- food_life2018 %>%
   filter(varnum==3)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Potatoes")+  
   theme_classic()
 
 p8 <- food_life2018 %>%
   filter(varnum==8)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Whole grains")+  
   theme_classic()
 
 p9 <- food_life2018 %>%
   filter(varnum==9)%>%
   ggplot(., aes(x = intake, y=life_exp)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Life expectancy', title="Processed meats")+  
   theme_classic()
 
@@ -713,48 +713,48 @@ annotate_figure(life_food,top = text_grob("Life Expectancy & Food Intake",
 cancer7<- food_life2018 %>%
   filter(varnum==7)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Refined grains")+
   theme_classic()
 
 cancer2 <- food_life2018 %>%
   filter(varnum==2)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Non-starchy vegetables")+
   theme_classic()
 
 cancer1 <- food_life2018 %>%
   filter(varnum==1)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Fruits")+    
   theme_classic()
 
 cancer3 <- food_life2018 %>%
   filter(varnum==3)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Potatoes")+  
   theme_classic()
 
 cancer8 <- food_life2018 %>%
   filter(varnum==8)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Whole grains")+  
   theme_classic()
 
 cancer9 <- food_life2018 %>%
   filter(varnum==9)%>%
   ggplot(., aes(x = intake, y=cancer_rate)) + 
-  geom_point(size=1,color='#2166ac')+
-  geom_smooth(method='lm', formula= y~x,color='#ef8a62')+
+  geom_point(size=1,color='turquoise3')+
+  geom_smooth(method='lm', formula= y~x,color='tomato')+
   labs(x='intake', y='Cancer Rate', title="Processed meats")+  
   theme_classic()
 
