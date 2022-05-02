@@ -3,3 +3,5 @@ data/Country-level Nutritions.csv
 data/Country-level-estimates/v02_cnty.csv
 data/Country-level-estimates/v04_cnty.csv
 data/Country-level-estimates/v07_cnty.csv
+.RData
+.Rhistory
