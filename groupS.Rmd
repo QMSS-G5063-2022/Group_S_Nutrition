@@ -1,5 +1,5 @@
 ---
-title: "Group S: Nutrition Intake"
+title: "Group S: Nutrition Intake and General Health"
 author: "Renfang Yang, Yixuan Li, Huan Sun"
 date: "2022/4/28"
 output:
@@ -55,9 +55,18 @@ food_life <- food_df %>%
   left_join(.,y=food_code, by = c('varnum'='varnum'))
 ```
 
+## Preamble
+There’s a saying that what we eat determines what we are. Intuitively, diet directly affects health.
+With the rich data from *Global Dietry Database* https://www.globaldietarydatabase.org/ from 1990 to 2018 on a five year basis, we would like to visualize the patter of dietary intake worldwide and inform global health with respect to nutrition intake.
+
+On the level of healthiness, we refer to the worldwide life expectancy and cancer rate as the corresponding index, where data are separately from *Global Cancer Observation* https://gco.iarc.fr/, and XXXX[芳芳加上life expectancy的数据源].
+
 # 1. Nutrition Intake Overview
 ### 1.1 Worldwide Discussion
-Here we generate a word cloud from tweets which is under the tag "nutritional", and we would further see if there is a difference between the general tag and the tag for a specific type of food using this word cloud later.
+
+Before we dive into the details, let's have a look of what people are talking about when they think of the world _*Nutritional*_. 
+
+We scrapped tweets from [XX Day to XX Day] and generate a word cloud from tweets which is under the tag "nutritional", and we would further see if there is a difference between the general tag and the tag for a specific type of food using this word cloud later.
 ```{r, message = FALSE, warning = FALSE}
 #word cloud with "nutritional" tag in twitter
 n <- "data/nutritional"
@@ -92,7 +101,7 @@ n_Corpus <- data.frame(word = names(n_Corpus), freq=n_Corpus, row.names = NULL)
 set.seed(1000)
 wordcloud2(n_Corpus, color = 'random-light', size = 2, minRotation = -pi/6, maxRotation = -pi/6)
 ```
-
+Unsurprisingly, accompanied with the world _*Nutritional*_, people are also talking about `health`, `diet`, `supplements` and `dietary`.
 
 ### 1.2 Top Food Worldwide (by average daily intake)
 ```{r, message = FALSE, warning = FALSE}
@@ -107,7 +116,8 @@ top_food_box <- food_life %>%
   theme_pander()+
   coord_flip()
 
-ggplotly(top_food_box)
+top_food_box
+#ggplotly(top_food_box)
 ```
 
 
@@ -145,7 +155,8 @@ plot1 <- top_year%>%
   labs(x='Year', y='Intake Avg(g/day)', title='Average Food Intake Worldwide')+
   theme_pander()
 
-ggplotly(plot1)
+plot1
+#ggplotly(plot1)
 ```
 
 
@@ -169,8 +180,9 @@ d_stru_90 <- gen_countries %>% filter(year==1990) %>%
   labs(x="Country", title="Dietary Sturcture in 1990") +
   theme_classic() +
   coord_flip() 
-ggplotly(d_stru_90) %>% layout(xaxis = list(title = "Percentage in Diet"),
-                               legend = list(orientation = "h",itemsizing="constant"))
+
+d_stru_90
+# ggplotly(d_stru_90) %>% layout(xaxis = list(title = "Percentage in Diet"),legend = list(orientation = "h",itemsizing="constant"))
 ```
 
 Then we visualize the dietary structure in 2018 of the same 9 countries.
@@ -184,8 +196,10 @@ d_stru_18 <- gen_countries %>% filter(year==2018) %>%
   labs(x="Country", title="Dietary Sturcture in 2018") +
   theme_classic() +
   coord_flip() 
-ggplotly(d_stru_18) %>% layout(xaxis = list(title = "Percentage in Diet"),
-                               legend = list(orientation = "h",itemsizing="constant"))
+
+d_stru_18
+
+#ggplotly(d_stru_18) %>% layout(xaxis = list(title = "Percentage in Diet"),legend = list(orientation = "h",itemsizing="constant"))
 ```
 
 ### 2.1 Dietary Struture Changes in China
@@ -312,7 +326,8 @@ rg_gender <- gender_China %>%
   labs(x="Year", y="Percentage of Refined Grains", title="Refined Grains in Dietary Structure by Gender in China") +
   theme_classic()
 
-ggplotly(rg_gender) 
+rg_gender
+#ggplotly(rg_gender) 
 ```
 We can see there is a similar descending trend in the changes of the percentage of refined grains between females and males in China.
 ```{r, message = FALSE, warning = FALSE}
@@ -325,7 +340,8 @@ nv_gender <- gender_China %>%
   labs(x="Year", y="Percentage of Non-starchy vegetables", title="Non-starchy vegetables in Dietary Structure by Gender in China") +
   theme_classic()
 
-ggplotly(nv_gender) 
+nv_gender
+#ggplotly(nv_gender) 
 ```
 There is a similar ascending trend in the changes of the percentage of non-starchy vegetables between females and males in China, while the gap between females and males is growing larger among these 28 years.
 
@@ -486,6 +502,7 @@ df%>%
   labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
 ```
+
 _*Takeaway*_:
 Throughout the year from 1990 to 2015, the _High Income Countries_ have shown a significantly lower consumption of refined grains compared to other super regional areas. Both South and East&Southeast Asia consumes the highest amount of refined grains. 
 
