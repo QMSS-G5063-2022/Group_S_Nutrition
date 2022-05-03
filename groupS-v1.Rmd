@@ -654,10 +654,12 @@ First, we want to explore  whether there are some spatial similarities in life e
 ```{r, message = FALSE, warning = FALSE}
 # life exp map
 
-world_cancer <- read.csv("data/world_cancer_2018.csv")
+a <- food_life2018 %>%
+  arrange(., iso3)%>%
+  filter(varnum==1)%>%
+  select(iso3,Country,life_exp,cancer_rate)
 
-world_cancer
-
+a
 ```
 
 ```{r}
@@ -665,9 +667,8 @@ world_cancer
 life_sp = readOGR(dsn= "data/world_map", 
                      layer="TM_WORLD_BORDERS_SIMPL-0.3")
 
-#试了与原来的life_df合并，下面用tmap画图也还是报错
 combined <- life_sp@data %>%
-  left_join(world_cancer,by=c(ISO3="Code"))
+  left_join(a,by=c(ISO3="iso3"))
 
 life_sp@data <- combined
 ```
