@@ -485,7 +485,7 @@ df <- refined_grains%>%
 
 
 ```{r, message = FALSE, warning = FALSE}
-df%>% 
+conti_grains <- df%>% 
   ggplot(aes(x = year, y = regional_avg, 
                    color = factor(superregion2,levels=c("East & Southeast Asia",
                                            "Former Soviet Union", 
@@ -494,8 +494,8 @@ df%>%
                                            "Middle East & North Africa",
                                            "South Asia",
                                            "Sub-Saharan Africa")))) + 
-  geom_point(size = 2, alpha = 0.5)+
-  geom_smooth(se = F, alpha=0.3) +
+  geom_point(size = 1, alpha = 0.5)+
+  geom_smooth(se = F, alpha=0.3,size = 1) +
   # scale_color_manual(values = c("#67001f", "#d6604d",
   #                                 "#fddbc7", "#d1e5f0", "#92c5de",
   #                                 "#2166ac", "#053061"))+
@@ -512,6 +512,7 @@ df%>%
   ggtitle("Superregional Refined Grains Average Intake") + 
   labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
+ggplotly(conti_grains)
 ```
 
 Throughout the year from 1990 to 2015, the _High Income Countries_ have shown a significantly lower consumption of refined grains compared to other super regional areas. Both South and East&Southeast Asia consumes the highest amount of refined grains. 
@@ -612,7 +613,7 @@ df01 <- non_starchy_vegs%>%
                                SSA = "Sub-Saharan Africa"
                                ))
 
-df01%>% 
+conti_vege <- df01%>% 
   ggplot(aes(x = year, y = regional_avg,alpha=0.8,
                    color = factor(superregion2,levels=c("East & Southeast Asia",
                                            "Former Soviet Union", 
@@ -621,8 +622,8 @@ df01%>%
                                            "Middle East & North Africa",
                                            "South Asia",
                                            "Sub-Saharan Africa")))) + 
-  geom_point(size = 2, alpha = 0.5)+
-  geom_smooth(se = F, alpha=0.3) +
+  geom_point(size = 1, alpha = 0.5)+
+  geom_smooth(se = F, alpha=0.3,size = 1) +
   # scale_color_manual(values = c("#67001f", "#d6604d",
   #                                 "#fddbc7", "#d1e5f0", "#92c5de",
   #                                 "#2166ac", "#053061"))+
@@ -639,6 +640,7 @@ df01%>%
   ggtitle("Superregional Non Starchy Vegetables Average Intake") + 
   labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
+ggplotly(conti_vege)
 ```
 
 
