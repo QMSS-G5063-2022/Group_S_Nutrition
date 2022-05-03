@@ -20,7 +20,7 @@ packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
 
 packages <- lapply(packages, FUN = function(x) {
   if(!require(x, character.only = TRUE)) {
-    install.packages(x)
+    install.packages(x,repos = "http://cran.us.r-project.org")
   library(x, character.only = TRUE)
   }
 }
