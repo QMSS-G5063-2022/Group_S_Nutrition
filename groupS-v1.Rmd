@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
             'glue','maps','ggpubr','ggmap','ggthemes','leaflet','leaflet.extras',
             'tidytext','textdata','DT','RColorBrewer','widgetframe','rgdal','grid',
-            'gridExtra','rio','textstem','tm','wordcloud2','qdapRegex','wordcloud')
+            'gridExtra','rio','textstem','tm','qdapRegex','wordcloud')
 
 packages <- lapply(packages, FUN = function(x) {
   if(!require(x, character.only = TRUE)) {
@@ -57,7 +57,7 @@ food_life <- food_df %>%
 
 # 1. Nutrition Intake Overview
 ### 1.1 Worldwide Discussion
-Here we generate a word cloud from tweets which is under the tag "nutritional", and we would further see if there is a difference between the general tag and the tag for a specific type of food using this word cloud later.
+Here we generate a word cloud from tweets which is under the tag "nutritional", and we would like to see whether those text refer to specfic types of food that we can pay more attention to later.
 ```{r, message = FALSE, warning = FALSE}
 # word cloud with "nutritional" tag in twitter
 n <- "data/nutritional"
@@ -101,7 +101,7 @@ purple_orange <- purple_orange[-(1:2)]
 wordcloud(n_Corpus$word,n_Corpus$freq ,colors =purple_orange, max.words = 100)
 
 ```
-
+It turns out that there are some words related to vegetables and most of the words are positive. Vegetables may be a potential focus for our later research.
 
 ### 1.2 Top Food Worldwide (by average daily intake)
 ```{r, message = FALSE, warning = FALSE}
