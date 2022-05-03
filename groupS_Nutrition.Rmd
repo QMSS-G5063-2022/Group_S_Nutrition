@@ -53,13 +53,16 @@ country_code <- read_csv('data/country_code.csv',show_col_types = FALSE)
 food_life <- food_df %>%
   left_join(x=food_df, y=life_df, by = c('iso3'='Code','year'='year'))  %>%
   left_join(.,y=food_code, by = c('varnum'='varnum'))
+
+food_life2018 <- food_life %>%
+    filter(age==999,female==999,urban==999,edu==999,year==2018)
 ```
 
 ## Preamble
 There’s a saying that what we eat determines what we are,as a matter of fact, dietary directly affects our health.
-With the rich data from *Global Dietary Database* https://www.globaldietarydatabase.org/ from 1990 to 2018 on a five year basis, we would like to visualize the patter of dietary intake worldwide and inform global health with respect to nutrition intake.
+With the rich data from [Global Dietary Database](https://www.globaldietarydatabase.org/) from 1990 to 2018 on a five year basis, we would like to visualize the patter of dietary intake worldwide and inform global health with respect to nutrition intake.
 
-On the level of healthiness, we refer to the worldwide life expectancy and cancer rate as the corresponding index, where data are separately from *Global Cancer Observation* https://gco.iarc.fr/, and *the World Bank* https://data.worldbank.org/indicator/SP.DYN.LE00.IN.
+On the level of healthiness, we refer to the worldwide life expectancy and cancer rate as the corresponding index, where data are separately from [Global Cancer Observation](https://gco.iarc.fr/), and [the World Bank](https://data.worldbank.org/indicator/SP.DYN.LE00.IN).
 
 
 # 1. Nutrition Intake Overview
@@ -158,7 +161,7 @@ ggplot(top_food_sex,aes(x=reorder(Food,intake_avg), y=intake_avg,fill=sex)) +
   coord_flip()
 ```
 
-Based on the bar chart, we see some interesting patterns in the difference in food intake by sex. On average, the Intake of potatoes and processed meats for man are more than that for women, while women have more vegetables, fruits, and yogurts than man.
+Based on the bar chart, we see some interesting patterns in the difference in food intake by sex. On average, the intake of potatoes and processed meats for man are more than that for women, while women have more vegetables, fruits, and yogurts than man.
 
 ### 1.4 Food Intake Trends Worldwide 
 Besides, we are curious about how food intake changed in recent years. This may provide some new perspectives for the study of lifestyle and health changes worldwide.
@@ -172,7 +175,7 @@ top_year <- food_life %>%
   arrange(desc(intake_avg)) 
   
 plot1 <- top_year%>%
-  ggplot(., aes(x = year, y=intake_avg,group=Food,color=Food,alpha=0.7)) + 
+  ggplot(., aes(x = year, y=intake_avg,group=Food,color=Food),alpha=0.7) + 
   geom_line( size=1)+
   geom_point(size=1)+
   labs(x='Year', y='Intake Avg(g/day)', title='Average Food Intake Worldwide')+
@@ -199,7 +202,7 @@ gen_countries <- countries_10 %>% filter(age == 999 &
 d_stru_90 <- gen_countries %>% filter(year==1990) %>%
   group_by(Country) %>%
   summarise(Food, total = sum(intake), percentage=(round(intake/total,4))*100) %>%
-  ggplot(aes(fill=Food, y=percentage, x=Country,alpha=0.95)) +
+  ggplot(aes(fill=Food, y=percentage, x=Country),alpha=0.95) +
   geom_bar(position="stack", stat="identity") +
   labs(x="Country", title="Dietary Sturcture in 1990") +
   theme(legend.justification = 0.05,
@@ -218,7 +221,7 @@ Then we visualize the dietary structure in 2018 of the same 9 countries.
 d_stru_18 <- gen_countries %>% filter(year==2018) %>%
   group_by(Country) %>%
   summarise(Food, total = sum(intake), percentage=(round(intake/total,4))*100) %>%
-  ggplot(aes(fill=Food, y=percentage, x=Country,alpha=0.95)) +
+  ggplot(aes(fill=Food, y=percentage, x=Country),alpha=0.95) +
   geom_bar(position="stack", stat="identity") +
   labs(x="Country", title="Dietary Sturcture in 2018") +
   theme(legend.justification = 0.05,
@@ -493,7 +496,7 @@ conti_grains <- df%>%
                                            "Latin America & Caribbean",
                                            "Middle East & North Africa",
                                            "South Asia",
-                                           "Sub-Saharan Africa")))) + 
+                                           "Sub-Saharan Africa"))),alpha=0.8) + 
   geom_point(size = 1, alpha = 0.5)+
   geom_smooth(se = F, alpha=0.3,size = 1) +
   # scale_color_manual(values = c("#67001f", "#d6604d",
@@ -614,7 +617,7 @@ df01 <- non_starchy_vegs%>%
                                ))
 
 conti_vege <- df01%>% 
-  ggplot(aes(x = year, y = regional_avg,alpha=0.8,
+  ggplot(aes(x = year, y = regional_avg,
                    color = factor(superregion2,levels=c("East & Southeast Asia",
                                            "Former Soviet Union", 
                                            "High-Income Countries", 
@@ -680,9 +683,9 @@ life_sp@data <- combined
 # life exp world plot
 library(tmap)
 
-tm_shape(life_sp)+
-  tmap_options(check.and.fix = TRUE)+
-  tm_fill()
+# tm_shape(life_sp)+
+#   tmap_options(check.and.fix = TRUE)+
+#   tm_fill()
 
 ```
 
