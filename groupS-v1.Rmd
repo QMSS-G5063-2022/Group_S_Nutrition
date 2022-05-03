@@ -59,7 +59,7 @@ food_life <- food_df %>%
 There’s a saying that what we eat determines what we are,as a matter of fact, dietary directly affects our health.
 With the rich data from *Global Dietary Database* https://www.globaldietarydatabase.org/ from 1990 to 2018 on a five year basis, we would like to visualize the patter of dietary intake worldwide and inform global health with respect to nutrition intake.
 
-On the level of healthiness, we refer to the worldwide life expectancy and cancer rate as the corresponding index, where data are separately from *Global Cancer Observation* https://gco.iarc.fr/, and XXXX[芳芳加上life expectancy的数据源].
+On the level of healthiness, we refer to the worldwide life expectancy and cancer rate as the corresponding index, where data are separately from *Global Cancer Observation* https://gco.iarc.fr/, and *the World Bank* https://data.worldbank.org/indicator/SP.DYN.LE00.IN.
 
 
 # 1. Nutrition Intake Overview
