@@ -57,7 +57,10 @@ food_life <- food_df %>%
 
 # 1. Nutrition Intake Overview
 ### 1.1 Worldwide Discussion
-Here we generate a word cloud from tweets which is under the tag "nutritional", and we would like to see whether those text refer to specfic types of food that we can pay more attention to later.
+What aspects are people concerned about nutritional intake in the world?     
+
+Here we generate a word cloud from the recent 7 days tweets which is under the tag "#nutritional" through Twitter API, and we would like to see whether those texts refer to specific types of food that we can pay more attention to later.
+
 ```{r, message = FALSE, warning = FALSE}
 # word cloud with "nutritional" tag in twitter
 n <- "data/nutritional"
@@ -101,9 +104,13 @@ purple_orange <- purple_orange[-(1:2)]
 wordcloud(n_Corpus$word,n_Corpus$freq ,colors =purple_orange, max.words = 100)
 
 ```
-It turns out that there are some words related to vegetables and most of the words are positive. Vegetables may be a potential focus for our later research.
+    
+    
+The wordcloud covers various types of things from drinks like soda to foods like tomato and meat. It cannot lead to a specific type for us to investigate later.
 
 ### 1.2 Top Food Worldwide (by average daily intake)
+Next, let's see what are the top popular food worldwide.
+
 ```{r, message = FALSE, warning = FALSE}
 top_food_box <- food_life %>%
   filter(year==2018,age==999,female==999,urban==999,edu==999) %>%
@@ -120,7 +127,12 @@ ggplotly(top_food_box)
 ```
 
 
+By calculating the average food daily intake for all countries all over the world, we got the box plot for 13 kinds of food. Refined grains are the most consumed daily food in the world, with the median intake of 226.78 grams, which is consistent with our expectations. Non-starchy vegetables and fruits are the most popular food as well.
+
 ### 1.3 Top Food Worldwide by Sex
+
+After understanding the ranking of food intake, a deeper question is, is there a significant difference between males and females in food consumption? 
+
 ```{r, message = FALSE, warning = FALSE}
 top_food_sex <- food_life %>%
   filter(year==2018,age==999,female!=999,urban==999,edu==999) %>%
@@ -131,14 +143,18 @@ top_food_sex <- food_life %>%
 
 ggplot(top_food_sex,aes(x=reorder(Food,intake_avg), y=intake_avg,fill=sex)) +
   geom_bar(stat="identity",position="dodge", width = 0.5, alpha = 0.7) +
-  labs(title="Differences in Food Intake for Female & Male",
+  labs(title="Differences in Food Intake for Females & Males",
        caption= "Source:Global Dietary Database",
        y="Average Food Daily Intake",x='')+
   theme_pander()+
   coord_flip()
 ```
 
-### 1.4 Food Intake Worldwide by Year
+Based on the bar chart, we see some interesting patterns in the difference in food intake by sex. On average, the Intake of potatoes and processed meats for man are more than that for women, while women have more vegetables, fruits, and yogurts than man.
+
+### 1.4 Food Intake Trends Worldwide 
+Besides, we are curious about how food intake changed in recent years. This may provide some new perspectives for the study of lifestyle and health changes worldwide.
+
 ```{r, message = FALSE, warning = FALSE}
 # Average Food Intake Worldwide by Year
 top_year <- food_life %>%
@@ -157,6 +173,7 @@ plot1 <- top_year%>%
 ggplotly(plot1)
 ```
 
+Based on the line chart, we see that overall, the intake of each food increases by the year. However, the daily intake of refined grains witnessed a slight drop since 2015. This change may be related to the trend that people pay more attention to dietary health and advocate rich grain sources in recent years.
 
 # 2. Dietary Structure
 Below we visualize the dietary structure in 1990 of 9 countries with top and last total GDP. The dietary structure is shown by calculating the percentage of each type of food in the total food intake respectively.
@@ -355,7 +372,7 @@ There is a similar ascending trend in the changes of the percentage of non-starc
 
 #### Refined Grains Intake Over the World
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 # read the refined grains data in 
 refined_grains <- read.csv("data/Country-level-estimates/v07_cnty.csv")
 
@@ -365,7 +382,7 @@ refined <- read.csv("data/Country-level-estimates/v07_cnty.csv")%>%
 ```
 
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 # being shown as median.x in the sp file
 refined_female<-refined%>%
   filter(female==1)%>%
@@ -388,47 +405,8 @@ combined <- world_sp@data %>%
 world_sp@data <- combined
 ```
 
-Plot the refined grains consumption given sex.
+
 ```{r, message = FALSE, warning = FALSE}
-mapplot1 <- leaflet(world_sp,
-              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
-  setView(lat=10, lng=0 , zoom=2) %>%
-    # Base groups = Background layer
-    addTiles(group = "OpenStreetMap") %>%
-    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-  # add country borders 
- addPolygons(group='Female Refined Grains Intake',
-               stroke = TRUE, smoothFactor = 0.5,
-  weight=1, color='#333333', opacity=1, 
- # add first layer:  
-  fillColor = ~colorQuantile("Blues", median.x)(median.x), 
-  fillOpacity = 1,
- # add label 
-  label = ~stringr::str_c(NAME, ' ',
-          formatC(median.x, big.mark = ',', format='d')),
-  labelOptions = labelOptions(direction = 'auto'))%>%
-  # add the second layer: 
-  addPolygons(group='Male Refined Grains Intake',
-    stroke = TRUE, smoothFactor = 0.5,
-  weight=1, color='#333333', opacity=1, 
-  fillColor = ~colorQuantile("Reds",median.y)(median.y), fillOpacity = 1,
- # add label 
-  label = ~stringr::str_c(NAME, ' ',
-          formatC(median.x, big.mark = ',', format='d')),
-  labelOptions = labelOptions(direction = 'auto'))%>%
-  # add layer control
-  addLayersControl( 
-    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
-    overlayGroups = c("Female Refined Grains Intake","Male Refined Grains Intake"), #<<
-    options = layersControlOptions(collapsed = TRUE) )
-
-#frameWidget(plot1)
-
-# widgetframe::frameWidget(plot1, width = "100%")
-
-```
-
-```{r}
 leaflet(world_sp,
         options = leafletOptions(minZoom = 1.5, maxZoom = 18)) %>%
   addTiles(group = "OpenStreetMap") %>% 
@@ -465,11 +443,11 @@ leaflet(world_sp,
     onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
 ```
 
+
 The maps suggests that worldwide wise, there's no obvious difference in refined grains intake upon gender. But the distribution of densely darkened countries suggests that there's may have some insights super-regional wise. 
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 # Refined Grains bar chart by continent
-
 df <- refined_grains%>%
   filter(age==999,female==999,urban==999,edu==999)%>%
   dplyr::select(superregion2,iso3,year,median)%>%
@@ -484,7 +462,10 @@ df <- refined_grains%>%
                                SAARC ="South Asia",
                                SSA = "Sub-Saharan Africa"
                                ))
+```
 
+
+```{r, message = FALSE, warning = FALSE}
 df%>% 
   ggplot(aes(x = year, y = regional_avg, 
                    color = factor(superregion2,levels=c("East & Southeast Asia",
@@ -513,6 +494,7 @@ df%>%
   labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
 ```
+
 _*Takeaway*_:
 Throughout the year from 1990 to 2015, the _High Income Countries_ have shown a significantly lower consumption of refined grains compared to other super regional areas. Both South and East&Southeast Asia consumes the highest amount of refined grains. 
 
@@ -524,7 +506,7 @@ Note the _unit_ for the survey data of *non starchy vegetables* is _grams per da
 Here we try to calculate the female respondents' average intake of non starchy vegetables in 2018. 
 
 The code book suggests that the value being _999_ means that the query variable of `age`, `edu`, `urban` includes no breakdown.
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 # get the data in 
 non_starchy_vegs<-read.csv("data/Country-level-estimates/v02_cnty.csv")
 starchy_vegs<-read.csv("data/Country-level-estimates/v04_cnty.csv")
@@ -551,43 +533,8 @@ combined <- world_sp@data %>%
 world_sp@data <- combined
 ```
 
+
 ```{r, message = FALSE, warning = FALSE}
-mapplot2 <- leaflet(world_sp,
-              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
-  setView(lat=10, lng=0 , zoom=2) %>%
-    # Base groups = Background layer
-    addTiles(group = "OpenStreetMap") %>%
-    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-  # add country borders 
- addPolygons(group='Non-strachy Vegetables',
-               stroke = TRUE, smoothFactor = 0.5,
-  weight=1, color='#333333', opacity=1, 
- # add first layer:  
-  fillColor = ~colorQuantile("Blues", non_starchy_vegs_mean)(non_starchy_vegs_mean), 
-  fillOpacity = 1,
- # add label 
-  label = ~stringr::str_c(NAME, ' ',
-          formatC(non_starchy_vegs_mean, big.mark = ',', format='d')),
-  labelOptions = labelOptions(direction = 'auto'))%>%
-  # add the second layer: 
-  addPolygons(group='Strachy Vegetables',
-    stroke = TRUE, smoothFactor = 0.5,
-  weight=1, color='#333333', opacity=1, 
-  fillColor = ~colorQuantile("Reds",starchy_vegs_mean)(starchy_vegs_mean), fillOpacity = 1,
- # add label 
-  label = ~stringr::str_c(NAME, ' ',
-          formatC(starchy_vegs_mean, big.mark = ',', format='d')),
-  labelOptions = labelOptions(direction = 'auto'))%>%
-  # add layer control
-  addLayersControl( 
-    baseGroups = c("OpenStreetMap", "Toner Lite"), #<<
-    overlayGroups = c("Non-strachy Vegetables","Strachy Vegetables"), #<<
-    options = layersControlOptions(collapsed = TRUE) )
-
-# frameWidget(plot2)
-```
-
-```{r}
 leaflet(world_sp,
         options = leafletOptions(minZoom = 1.5, maxZoom = 18)) %>%
   addTiles(group = "OpenStreetMap") %>% 
@@ -674,12 +621,18 @@ df01%>%
   labs(caption = "*For all ages, gender, rural/urban, edu background.")
 
 ```
+
+     
 _*Takeaway*_:
 Latin America & Caribbean countries has the lowest intake of non starchy vegetables, and surprisingly, the high income countries also shows a relatively low non starchy vegetables consumption. 
 Russia (Former Soviet Union) has an increasing level of intake that allows it outnumbered other countries by the end of 2018. 
 
 # 3. Nutrition & Health
+For the last part, we pay attention to the relationship between food intake and health problems from life expectancy to cancer rate, trying to find some patterns and put some advice on food intake for health.
+
 ### 3.1 Food Intake & Life Expetancy
+First, we must figure out whether there are some spatial similarities in life expectancy around the world.
+
 ```{r, message = FALSE, warning = FALSE}
 # life exp map
 
@@ -688,6 +641,7 @@ Russia (Former Soviet Union) has an increasing level of intake that allows it ou
 
 
 
+The graphs below are generated based on the food intake and life expectancy for each country in 2018 and linear regression models are applied.
 
 ```{r, message = FALSE, warning = FALSE}
 # lm reg line chart
@@ -748,14 +702,19 @@ annotate_figure(life_food,top = text_grob("Life Expectancy & Food Intake",
                                 color = "tomato", face = "bold", size = 14))
 ```
 
+There is a slightly negative relationship between life expectancy and food intake in both refined grains and whole grains. For other food, we didn't see some obvious relationship due to the outliers. 
 
 ### 3.1 Food Intake & Cancer Rate
+
+How about the relationship between food intake and cancer rate? Again, we generate the map of the cancer rate and see if there is some spatial aggregation in the cancer rate.
+
 ```{r, message = FALSE, warning = FALSE}
 # cancer rate map
 
 
 ```
 
+The graphs below are generated based on the food intake and cancer rate for each country in 2018 and linear regression models are applied.
 
 ```{r, message = FALSE, warning = FALSE}
 cancer7<- food_life2018 %>%
@@ -813,10 +772,18 @@ annotate_figure(cancer_food,top = text_grob("Cancer Rate & Food Intake",
                                 color = "tomato", face = "bold", size = 14))
 ```
 
+There is a negative relationship between cancer rate and refined grains. On average, a country with a higher daily intake of refined grains tends to be with lower cancer rate. 
+
+Besides, there is a positive relationship between processed meat consumption and cancer rate. On average, a country with a lower daily intake of processed meats tends to be with lower cancer rate. 
+
+Considering the previous finding on the relationship between refined grain intake and life expectancy, it seems that a country with a higher refined grain intake is accompanied by a lower cancer rate and a lower life expectancy. This contradiction may suggest to us that we cannot simply say that refined grains do harm to health and it calls for the need to further study the relationship between health and grains intake.
 
 
 # Appendix
-### basic information of food intake
+Data used for the graphs above is attached below.
+
+### Table1: food intake
+
 ```{r, message = FALSE, warning = FALSE}
 basic_intake <- food_life %>%
   filter(age==999,female==999,urban==999,edu==999) %>%
@@ -828,7 +795,7 @@ basic_intake <- food_life %>%
 datatable(basic_intake,filter = list(position = "top"),rownames = FALSE) 
 ```
 
-### basic information of life expectancy & cancer rate
+### Table2: life expectancy & cancer rate
 ```{r, message = FALSE, warning = FALSE}
 basic_life <- food_life %>%
   filter(age==999,female==999,urban==999,edu==999) %>%
