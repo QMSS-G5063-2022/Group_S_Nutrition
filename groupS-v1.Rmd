@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 packages <- c("readr","ggplot2","tidyverse","dplyr","data.table","fs","plotly",
             'glue','maps','ggpubr','ggmap','ggthemes','leaflet','leaflet.extras',
             'tidytext','textdata','DT','RColorBrewer','widgetframe','rgdal','grid',
-            'gridExtra','rio','textstem','tm','qdapRegex','wordcloud')
+            'gridExtra','rio','textstem','tm','qdapRegex','wordcloud','htmlwidgets')
 
 packages <- lapply(packages, FUN = function(x) {
   if(!require(x, character.only = TRUE)) {
@@ -653,18 +653,33 @@ First, we want to explore  whether there are some spatial similarities in life e
 
 ```{r, message = FALSE, warning = FALSE}
 # life exp map
-food_life2018 <- food_life %>%
-    filter(age==999,female==999,urban==999,edu==999,year==2018)
 
-combined <- world_sp@data %>%
-  left_join(food_life2018,by=c(ISO3="iso3"))
-world_sp@data <- combined
+world_cancer <- read.csv("data/world_cancer_2018.csv")
+
+world_cancer
 
 ```
 
+```{r}
+# read in the blank shape file again
+life_sp = readOGR(dsn= "data/world_map", 
+                     layer="TM_WORLD_BORDERS_SIMPL-0.3")
+
+#试了与原来的life_df合并，下面用tmap画图也还是报错
+combined <- life_sp@data %>%
+  left_join(world_cancer,by=c(ISO3="Code"))
+
+life_sp@data <- combined
+```
+
+
 ```{r, message = FALSE, warning = FALSE}
 # life exp world plot
+library(tmap)
 
+tm_shape(life_sp)+
+  tmap_options(check.and.fix = TRUE)+
+  tm_fill()
 
 ```
 
