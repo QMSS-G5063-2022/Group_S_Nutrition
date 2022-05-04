@@ -703,7 +703,7 @@ leaflet(life_sp,
     onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
 
 ```
-
+What we can see from the distribution of darker colored countries location is that they're mostly in north America, West Europe East Asia and Australia.  
 
 The graphs below are generated based on the food intake and life expectancy for each country in 2018 and linear regression models are applied.
 
@@ -768,7 +768,8 @@ There is a slightly negative relationship between life expectancy and food intak
 
 ### 3.1 Food Intake & Cancer Rate
 
-How about the relationship between food intake and cancer rate? Again, we generate the map of the cancer rate and see if there is some spatial aggregation in the cancer rate.
+How about the relationship between food intake and cancer rate? Again, we generate the map of the cancer rate and see if there is some spatial aggregation in the cancer rate. 
+Here we're using the age-standardized-rates(`ASR`) that expressed per 100,000 residents as the index. 
 
 ```{r, message = FALSE, warning = FALSE}
 # cancer rate map
@@ -801,6 +802,7 @@ leaflet(life_sp,
     onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
 
 ```
+What is interesting is that it's almost the same countries that have higher life expectancy that are of higher cancer rates. It could be that most cancer are positively related to age, which is another topic for further research. 
 
 The graphs below are generated based on the food intake and cancer rate for each country in 2018 and linear regression models are applied.
 
