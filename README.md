@@ -1,22 +1,22 @@
 # Group S: Nutrition Intake 
 
-#### Contacts
+### Contacts
 - Huan Sun: hs3240@columbia.edu
 - Renfang Yang: ry2403@columbia.edu
 - Yixuan Li: yl4564@columbia.edu
 
-#### Abstract
+### Abstract
 There’s a saying that what we eat determines what we are. Intuitively, diet directly affects health. And we aim to test this hypothesis and study the effect of nutrition on life expectancy and cancer rate in this project. To be more specific, our research questions include:
-⋅⋅⋅**1. Dietary Structure:**
+##### 1. Dietary Structure:
 - What's the people's overall impression on dietary structure in twitter? 
 - How does the nutrition intake change across the world changes in relation to time?
 - How does the dietary structure vary for different countries, area, and sex?
 - Did dietary structures change over time in country, area, sex level?
-⋅⋅⋅**2. Food Intake & Life Expectancy:**
+##### 2. Food Intake & Life Expectancy:
 - How's the distribution of life expectancy in the world?
 - Do people from certain countries, area, or sex more likely to have longer life expectancy?
 - Is there a correlation between the dietary structure and life expectancy?
-···**3. Food Intake & Cancer Rate:**
+##### 3. Food Intake & Cancer Rate:
 - How's the distribution of cancer rate in the world?
 - Do people from certain countries, area, or sex more likely to have higher cancer rate?
 - Is there a correlation between the dietary structure and cancer rate?
