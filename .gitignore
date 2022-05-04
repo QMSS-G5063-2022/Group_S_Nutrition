@@ -5,3 +5,4 @@ data/Country-level-estimates/v04_cnty.csv
 data/Country-level-estimates/v07_cnty.csv
 .RData
 .Rhistory
+.DS_Store
