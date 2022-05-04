@@ -656,7 +656,7 @@ For the last part, we pay attention to the relationship between food intake and 
 ### 3.1 Food Intake & Life Expetancy
 First, we want to explore  whether there are some spatial similarities in life expectancy around the world.
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, echo=FALSE, include=FALSE}
 life_cancer2018 <- food_life2018 %>%
   filter(varnum==1)%>%
   distinct(iso3,Country,life_exp,cancer_rate)
