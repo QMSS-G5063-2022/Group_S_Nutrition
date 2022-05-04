@@ -657,14 +657,10 @@ For the last part, we pay attention to the relationship between food intake and 
 First, we want to explore  whether there are some spatial similarities in life expectancy around the world.
 
 ```{r, message = FALSE, warning = FALSE}
-life_cancer2018 <- food_life %>%
-  arrange(., iso3)%>%
-  filter(varnum==1,year==2018)%>%
+life_cancer2018 <- food_life2018 %>%
+  filter(varnum==1)%>%
   distinct(iso3,Country,life_exp,cancer_rate)
 
-```
-
-```{r}
 # read in the blank shape file again
 life_sp = readOGR(dsn= "data/world_map", 
                      layer="TM_WORLD_BORDERS_SIMPL-0.3")
@@ -678,12 +674,16 @@ life_sp@data <- combined
 
 ```{r, message = FALSE, warning = FALSE}
 # life exp world plot
-<<<<<<< HEAD
-life_plot <- leaflet(life_sp,
-              leafletOptions(attributionControl = FALSE, minzoom=1.5)) %>% 
-  setView(lat=10, lng=0 , zoom=2) %>%
-  # add country borders 
- addPolygons(stroke = TRUE, smoothFactor = 0.5,
+leaflet(life_sp,
+        options = leafletOptions(minZoom = 1.5, maxZoom = 18)) %>%
+  # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  setView(10,0,zoom=2) %>%
+
+    # add country borders 
+ addPolygons(group='Life Expectancy',
+               stroke = TRUE, smoothFactor = 0.5,
   weight=1, color='#333333', opacity=1, 
  # add first layer:  
   fillColor = ~colorQuantile("Blues", life_exp)(life_exp), 
@@ -692,22 +692,15 @@ life_plot <- leaflet(life_sp,
   label = ~stringr::str_c(NAME, ' ',
           formatC(life_exp, big.mark = ',', format='d')),
   labelOptions = labelOptions(direction = 'auto'))%>%
- # add legend 
-  addLegend("bottomright", 
-    pal = colorNumeric("Blues", life_sp$life_exp), 
-            values = ~life_exp,
-    title = htmltools::HTML("Life Expentancy 2018"),
-    opacity = 1)
- 
 
-frameWidget(life_plot)
-=======
-library(tmap)
-
-# tm_shape(life_sp)+
-#   tmap_options(check.and.fix = TRUE)+
-#   tm_fill()
->>>>>>> 650b57383c9365d77e5315c127f0887cbc6f36eb
+  addLayersControl(
+    overlayGroups = c("Life Expectancy"),
+    options = layersControlOptions(collapsed = TRUE)
+  ) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", 
+    title="Locate Me",
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
 
 ```
 
@@ -779,7 +772,33 @@ How about the relationship between food intake and cancer rate? Again, we genera
 
 ```{r, message = FALSE, warning = FALSE}
 # cancer rate map
+leaflet(life_sp,
+        options = leafletOptions(minZoom = 1.5, maxZoom = 18)) %>%
+  # Base groups = Background layer
+    addTiles(group = "OpenStreetMap") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  setView(10,0,zoom=2) %>%
 
+    # add country borders 
+ addPolygons(group='Life Expectancy',
+               stroke = TRUE, smoothFactor = 0.5,
+  weight=1, color='#333333', opacity=1, 
+ # add first layer:  
+  fillColor = ~colorQuantile("Blues", cancer_rate)(cancer_rate), 
+  fillOpacity = 1,
+ # add label 
+  label = ~stringr::str_c(NAME, ' ',
+          formatC(cancer_rate, big.mark = ',', format='d')),
+  labelOptions = labelOptions(direction = 'auto'))%>%
+
+  addLayersControl(
+    overlayGroups = c("Cancer Rate"),
+    options = layersControlOptions(collapsed = TRUE)
+  ) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", 
+    title="Locate Me",
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
 
 ```
 
